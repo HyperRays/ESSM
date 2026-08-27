@@ -132,7 +132,7 @@ fn parse_arguments(arguments: impl Iterator<Item = String>) -> Result<Cli, Strin
 fn print_help() {
     println!(
         "\
-Enclosed Space Searching Machine \u{2014} a filesystem indexing and visualization tool
+Enclosed Space Searching Machine
 
 usage: essm [OPTIONS] [ROOT]
 

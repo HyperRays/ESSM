@@ -1,7 +1,5 @@
 # Enclosed Space Searching Machine
 
-Quickly find out where your disk space is going.
-
 <p align="center">
   <img src="desktop/dist/essm-root-scan.gif" alt="Enclosed Space Searching Machine scanning the macOS root filesystem and progressively filling an interactive treemap" width="100%">
 </p>

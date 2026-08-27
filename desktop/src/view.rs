@@ -41,11 +41,7 @@ pub fn setup(form: &SetupForm) -> Element<'_, Message> {
         text("Enclosed Space Searching Machine")
             .size(24)
             .color(SKY_BLUE),
-        text("Map a directory tree and see where the space went.")
-            .size(14)
-            .color(ui().label),
     ]
-    .spacing(6)
     .align_x(Alignment::Center)
     .width(Length::Fill);
 
@@ -211,7 +207,6 @@ fn sidebar(app: &ScanModel) -> Element<'_, Message> {
     let mut navigation = column![
         text("Enclosed Space").size(19).color(SKY_BLUE),
         text("Searching Machine").size(19).color(SKY_BLUE),
-        text("Filesystem explorer").size(11).color(ui().label),
         Space::new().height(Length::Fixed(14.0)),
     ]
     .spacing(2);
