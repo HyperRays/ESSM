@@ -1,0 +1,10 @@
+[package]
+name = "essm"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+findex-client = { version = "0.1.0", path = "../rust_client" }
+iced = { version = "0.14.0", features = ["advanced", "canvas"] }
+png = "0.17"
+serde_json = "1"

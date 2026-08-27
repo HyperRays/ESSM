@@ -1,0 +1,1 @@
+FindexRust.Bridge.run()

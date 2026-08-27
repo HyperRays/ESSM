@@ -1,0 +1,22 @@
+# macOS and local environment
+.DS_Store
+.env
+
+# Findex (Elixir and native NIF)
+/findex/_build/
+/findex/deps/
+/findex/.elixir_ls/
+/findex/priv/*.so
+/findex/priv/*.dSYM/
+/findex/bench/readdir_baseline
+/findex/native/*.plist
+/findex/*.plist
+
+# Rust client
+/rust_client/target/
+/rust_client/backend/_build/
+/rust_client/backend/deps/
+
+# Desktop application
+/desktop/target/
+/desktop/dist/*.app/

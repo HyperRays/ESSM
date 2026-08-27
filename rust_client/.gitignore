@@ -1,0 +1,4 @@
+/target/
+/backend/_build/
+/backend/deps/
+/.DS_Store
