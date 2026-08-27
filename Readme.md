@@ -72,3 +72,6 @@ cargo test --manifest-path desktop/Cargo.toml
 The integration test performs a real scan through the event stream
 used by the desktop interface. Engine APIs, internals, and lower-level clients
 are documented separately in the [Findex engine README](findex/README.md).
+
+Random trivia:
+The name comes from here https://doraemon.fandom.com/wiki/Enclosed_Space_Searching_Machine
