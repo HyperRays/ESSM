@@ -56,7 +56,7 @@ release: check-tools
 	$(CARGO) build --release --manifest-path "$(RUST_CLIENT_DIR)/Cargo.toml"
 	$(CARGO) build --release --manifest-path "$(DESKTOP_DIR)/Cargo.toml"
 
-## Assemble desktop/dist/Enclosed Space Searching Machine.app.
+## Assemble desktop/dist/ESSM.app.
 package: check-tools
 	cd "$(DESKTOP_DIR)" && ./package.sh
 

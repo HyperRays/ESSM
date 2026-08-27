@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds a self-contained "Enclosed Space Searching Machine.app" into desktop/dist/.
+# Builds a self-contained "ESSM.app" into desktop/dist/.
 #
 # The bundle carries the release desktop binary plus a full OTP release
 # of the Findex backend (its own ERTS and the native library), so the
@@ -16,7 +16,7 @@ echo "==> backend OTP release"
 echo "==> desktop release binary"
 (cd "$here" && cargo build --release)
 
-app="$here/dist/Enclosed Space Searching Machine.app"
+app="$here/dist/ESSM.app"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$here/target/release/essm" "$app/Contents/MacOS/essm"
