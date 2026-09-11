@@ -1,18 +1,16 @@
 defmodule Findex do
   @moduledoc """
-  Documentation for `Findex`.
-  """
+  macOS filesystem indexing with a concurrent, readable native store.
 
-  @doc """
-  Hello world.
+  Use `Findex.Indexer` for recursive scans, `Findex.Store` to read the retained
+  tree, and `Findex.Directory` for bounded, non-recursive enumeration.
+  `Findex.Batch` decodes metadata from packed directory results without
+  allocating an entry struct for every row.
 
   ## Examples
 
-      iex> Findex.hello()
-      :world
+      iex> :data_size in Findex.Directory.supported_fields()
+      true
 
   """
-  def hello do
-    :world
-  end
 end

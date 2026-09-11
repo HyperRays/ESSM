@@ -15,9 +15,6 @@ defmodule Findex.Nif do
     :erlang.load_nif(nif_path, 0)
   end
 
-  @doc "Prints `Hello, world!` from C and returns `:ok`."
-  def hello, do: :erlang.nif_error(:nif_not_loaded)
-
   @doc false
   def open_directory(_path, _fields, _format, _path_policy),
     do: :erlang.nif_error(:nif_not_loaded)

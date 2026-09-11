@@ -1,19 +1,5 @@
 #include "findex_nif.h"
 
-#include <stdio.h>
-
-static ERL_NIF_TERM hello(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
-  (void)argv;
-
-  if (argc != 0) {
-    return enif_make_badarg(env);
-  }
-
-  puts("Hello, world!");
-  fflush(stdout);
-  return findex_atom(env, "ok");
-}
-
 static int load(ErlNifEnv *env, void **private_data, ERL_NIF_TERM load_info) {
   (void)load_info;
 
@@ -39,7 +25,6 @@ static void unload(ErlNifEnv *env, void *private_data) {
 }
 
 static ErlNifFunc nif_functions[] = {
-    {"hello", 0, hello, 0},
     {"open_directory", 4, findex_nif_open_directory,
      ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"next_directory_batch", 2, findex_nif_next_directory_batch,

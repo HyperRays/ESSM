@@ -1,6 +1,6 @@
 | File | Responsibility |
 | --- | --- |
-| `findex_nif.c` | NIF registration, load/unload, and the diagnostic `hello/0` entry point. |
+| `findex_nif.c` | NIF registration and resource load/unload. |
 | `findex_common.c` | Shared field schema, Erlang-term helpers, errno conversion, and checked size arithmetic. |
 | `findex_directory.c` | `attrlist` configuration, packed-record validation/decoding, standalone cursors, and native fused-scan batches. |
 | `findex_store.c` | Concurrent append-only tree layout, fused scan publication, completion journal, readers, and asynchronous store reclamation. |
