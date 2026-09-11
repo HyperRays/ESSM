@@ -1,12 +1,12 @@
-# Enclosed Space Searching Machine
+# ESSM
 
 [Website](https://hyperrays.github.io/ESSM/) · [Download for macOS](https://github.com/HyperRays/ESSM/releases/latest)
 
 <p align="center">
-  <img src="desktop/dist/essm-root-scan.gif" alt="Enclosed Space Searching Machine scanning the macOS root filesystem and progressively filling an interactive treemap" width="100%">
+  <img src="desktop/dist/essm-root-scan.gif?v=0d86a8d1684b" alt="ESSM scanning the macOS root filesystem and progressively filling an interactive treemap" width="100%">
 </p>
 
-(Not realtime! Actual time displayed in the top left (~19 sec))
+The preview plays in real time. Watch the [full-resolution recording on the website](https://hyperrays.github.io/ESSM/#explore).
 
 ## Build from source
 

@@ -16,6 +16,7 @@ def main():
     parser.add_argument("frames", type=Path, help="Original --record directory, including frames.jsonl")
     parser.add_argument("--poster-frame", type=int, required=True, help="Zero-based frame for the poster")
     parser.add_argument("--output", type=Path, default=Path("docs/assets"))
+    parser.add_argument("--gif-output", type=Path, help="Also create a real-time, 1360px-wide README preview")
     args = parser.parse_args()
     frames = sorted(args.frames.resolve().glob("frame-*.png"))
     if len(frames) < 2:
@@ -84,6 +85,18 @@ def main():
         ], check=True)
 
     shutil.copyfile(frames[args.poster_frame], args.output / "essm-scan-poster.png")
+    if args.gif_output:
+        args.gif_output.parent.mkdir(parents=True, exist_ok=True)
+        print("Encoding real-time README preview…", flush=True)
+        # Decode the lossless master so the GIF shares the video's timing.
+        subprocess.run([
+            "ffmpeg", "-hide_banner", "-loglevel", "warning", "-y",
+            "-i", str(args.output / "essm-scan.webm"),
+            "-filter_complex",
+            "fps=30,scale=1360:-1:flags=lanczos,split[a][b];"
+            "[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=diff_mode=rectangle",
+            "-loop", "0", str(args.gif_output),
+        ], check=True)
     print("Encoded {} source frames across {:.3f} seconds.".format(len(frames), duration))
 
 

@@ -32,7 +32,7 @@ See [GitHub's custom Pages workflow documentation](https://docs.github.com/en/pa
   the appearance.
 - When publishing a new desktop release, update the download URL, version, and
   platform requirements together. The current download is the verified
-  `v0.1.0` Apple Silicon release for macOS 13 or later.
+  `v0.1.1` Apple Silicon release for macOS 13 or later.
 - `assets/essm-icon.png` is exported from `desktop/packaging/ESSM.icns`.
 - The demo is a fresh capture made with the app's `--record` option at its
   native Retina resolution, 2720 × 1720. It is encoded directly from full-color
@@ -60,12 +60,16 @@ cargo build --release --manifest-path desktop/Cargo.toml
 recording_dir=$(mktemp -d /tmp/essm-recording.XXXXXX)
 desktop/target/release/essm \
   --dark --anonymize --record "$recording_dir" --record-fps 30 /
-python3 scripts/encode-site-recording.py "$recording_dir" --poster-frame 300
+python3 scripts/encode-site-recording.py "$recording_dir" --poster-frame 300 \
+  --gif-output desktop/dist/essm-root-scan.gif
 ```
 
 The encoder requires Python 3 and FFmpeg with `libvpx-vp9` and `libx264`. Choose
 a poster frame from the new recording; the example selects frame 300. A packaged
 app built from the current source supports the same recording options.
+
+`--gif-output` also refreshes the README preview at 1360 pixels wide. Its timing
+comes from the lossless video; the website retains the full-resolution versions.
 
 The recorder targets 30 captures per second by default; `--record-fps` accepts
 1–60. PNG compression runs on a worker thread with a bounded queue so it does
