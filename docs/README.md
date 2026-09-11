@@ -52,24 +52,30 @@ Use a fresh directory, and leave the recorder running until the app exits after
 showing the treemap, sunburst, graph, and diagnostics. `--anonymize` hides the
 account username in displayed paths. Review the captured frames before publishing.
 
-With the packaged app already built, run from the repository root:
+Build the current recorder, then run from the repository root:
 
 ```sh
+(cd rust_client/backend && mix compile)
+cargo build --release --manifest-path desktop/Cargo.toml
 recording_dir=$(mktemp -d /tmp/essm-recording.XXXXXX)
-desktop/dist/ESSM.app/Contents/MacOS/essm \
-  --dark --anonymize --record "$recording_dir" /
-python3 scripts/encode-site-recording.py "$recording_dir" --poster-frame 42
+desktop/target/release/essm \
+  --dark --anonymize --record "$recording_dir" --record-fps 30 /
+python3 scripts/encode-site-recording.py "$recording_dir" --poster-frame 300
 ```
 
-Alternatively, use `desktop/target/release/essm` after building the development
-backend and release binary. The encoder requires Python 3 and FFmpeg with
-`libvpx-vp9` and `libx264`. Choose a poster frame from that recording; frame 42
-is the treemap frame used for the current demo.
+The encoder requires Python 3 and FFmpeg with `libvpx-vp9` and `libx264`. Choose
+a poster frame from the new recording; the example selects frame 300. A packaged
+app built from the current source supports the same recording options.
 
-The recorder samples approximately twice per second. The encoder derives frame
-durations from the original PNG modification timestamps, then repeats frames on
-a 30 fps playback timeline without interpolation or acceleration. Keep those
-timestamps intact when copying or archiving the raw frames. The current scan
-takes about 23 seconds, followed by the view tour, for about 39 seconds total.
+The recorder targets 30 captures per second by default; `--record-fps` accepts
+1–60. PNG compression runs on a worker thread with a bounded queue so it does
+not block rendering. `frames.jsonl` stores monotonic capture timestamps, which
+the encoder uses for real-time playback instead of estimating timing from disk
+writes. Keep this file with the PNGs. The encoder reports the measured capture
+rate and longest interval, and samples the captured frames onto a 30 fps video
+timeline without interpolation or acceleration. The post-scan tour holds each
+view for four seconds regardless of capture rate. Older recordings without a
+timing manifest fall back to PNG modification timestamps.
+
 If the captured window size changes, update the video dimensions in `index.html`
 and the aspect ratio in `style.css` together.

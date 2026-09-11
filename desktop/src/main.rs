@@ -10,12 +10,13 @@ mod app;
 mod backend;
 mod charts;
 mod format;
+mod recording;
 mod theme;
 mod view;
 
 use std::env;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use findex_client::MountPolicy;
 use iced::futures::{SinkExt, Stream, StreamExt};
@@ -67,6 +68,7 @@ struct Cli {
     anonymize: bool,
     autoshot: Option<PathBuf>,
     record: Option<PathBuf>,
+    record_fps: Option<u32>,
 }
 
 fn parse_arguments(arguments: impl Iterator<Item = String>) -> Result<Cli, String> {
@@ -90,6 +92,18 @@ fn parse_arguments(arguments: impl Iterator<Item = String>) -> Result<Cli, Strin
                     .next()
                     .ok_or_else(|| "--record requires a directory".to_owned())?;
                 cli.record = Some(PathBuf::from(value));
+            }
+            "--record-fps" => {
+                let value = arguments
+                    .next()
+                    .ok_or_else(|| "--record-fps requires a value".to_owned())?;
+                cli.record_fps = Some(
+                    value
+                        .parse::<u32>()
+                        .ok()
+                        .filter(|fps| (1..=60).contains(fps))
+                        .ok_or_else(|| "--record-fps must be between 1 and 60".to_owned())?,
+                );
             }
             "--workspace-root" | "--project-root" => {
                 let value = arguments
@@ -147,6 +161,7 @@ Without ROOT the app opens on the scan form. Options prefill the form:
       --anonymize          hide the username in rendered paths (for sharing)
       --autoshot DIR       debug: cycle every view, save PNGs, then exit
       --record DIR         capture the live scan as PNG frames, then exit
+      --record-fps N       target capture rate, 1–60 (default: 30)
   -h, --help               show this help
 
 Compile the backend first with `(cd rust_client/backend && mix compile)`."
@@ -280,12 +295,13 @@ struct DesktopApp {
 /// the remaining views, then exit. Frames are PNGs for external GIF or
 /// video assembly. Driven by `--record DIR`.
 struct Recording {
-    directory: PathBuf,
-    frame: usize,
+    writer: recording::FrameWriter,
+    fps: u32,
+    started_at: Instant,
     /// A capture is in flight; skip further ticks until it lands.
     capturing: bool,
-    /// Frames stored after the scan reached a terminal phase.
-    post_complete: u32,
+    /// Tour timing is independent of the capture frame rate.
+    completed_at: Option<Instant>,
 }
 
 /// Debug screenshot tour: visits every view in both modes, captures the
@@ -343,10 +359,11 @@ impl DesktopApp {
                 warmup: 3,
             }),
             recording: cli.record.clone().map(|directory| Recording {
-                directory,
-                frame: 0,
+                writer: recording::FrameWriter::new(directory),
+                fps: cli.record_fps.unwrap_or(30),
+                started_at: Instant::now(),
                 capturing: false,
-                post_complete: 0,
+                completed_at: None,
             }),
         };
         if cli.root.is_some() {
@@ -420,7 +437,7 @@ fn update(state: &mut DesktopApp, message: Message) -> iced::Task<Message> {
         Message::AutoshotTick if state.recording.is_some() => return recording_tick(state),
         Message::AutoshotTick => return autoshot_tick(state),
         Message::ShotTaken(shot) if state.recording.is_some() => {
-            return recording_store(state, &shot);
+            return recording_store(state, shot);
         }
         Message::ShotTaken(shot) => return autoshot_store(state, &shot),
         Message::RootChanged(value) => state.setup.root = value,
@@ -488,18 +505,19 @@ fn recording_tick(state: &mut DesktopApp) -> iced::Task<Message> {
         .map(Message::ShotTaken)
 }
 
-fn recording_store(state: &mut DesktopApp, shot: &iced::window::Screenshot) -> iced::Task<Message> {
+fn recording_store(state: &mut DesktopApp, shot: iced::window::Screenshot) -> iced::Task<Message> {
     let Some(recording) = &mut state.recording else {
         return iced::Task::none();
     };
     recording.capturing = false;
-    let path = recording
-        .directory
-        .join(format!("frame-{:04}.png", recording.frame));
-    if let Err(error) = save_png(&path, shot) {
-        eprintln!("essm: could not save {}: {error}", path.display());
+    let captured_at = Instant::now();
+    if let Err(error) = recording
+        .writer
+        .push(shot, captured_at.duration_since(recording.started_at))
+    {
+        eprintln!("essm: could not record frame: {error}");
+        return iced::exit();
     }
-    recording.frame += 1;
 
     let terminal = matches!(
         state.model.phase.as_str(),
@@ -508,17 +526,26 @@ fn recording_store(state: &mut DesktopApp, shot: &iced::window::Screenshot) -> i
     if !terminal {
         return iced::Task::none();
     }
-    // Hold the finished treemap, then walk the other views, giving
-    // each tab enough frames to be read in the assembled clip.
-    recording.post_complete += 1;
-    state.model.tab = match recording.post_complete {
-        0..=7 => Tab::Treemap,
-        8..=15 => Tab::Sunburst,
-        16..=23 => Tab::Graph,
-        24..=31 => Tab::Diagnostics,
-        _ => return iced::exit(),
-    };
+    let completed_at = *recording.completed_at.get_or_insert(captured_at);
+    if let Some(tab) = recording_tour_tab(captured_at.duration_since(completed_at)) {
+        state.model.tab = tab;
+    } else {
+        if let Err(error) = recording.writer.finish() {
+            eprintln!("essm: could not finish recording: {error}");
+        }
+        return iced::exit();
+    }
     iced::Task::none()
+}
+
+fn recording_tour_tab(elapsed: Duration) -> Option<Tab> {
+    match elapsed.as_secs() {
+        0..=3 => Some(Tab::Treemap),
+        4..=7 => Some(Tab::Sunburst),
+        8..=11 => Some(Tab::Graph),
+        12..=15 => Some(Tab::Diagnostics),
+        _ => None,
+    }
 }
 
 fn autoshot_store(state: &mut DesktopApp, shot: &iced::window::Screenshot) -> iced::Task<Message> {
@@ -552,6 +579,7 @@ fn save_png(path: &Path, shot: &iced::window::Screenshot) -> Result<(), String> 
     );
     encoder.set_color(png::ColorType::Rgba);
     encoder.set_depth(png::BitDepth::Eight);
+    encoder.set_compression(png::Compression::Fast);
     let mut writer = encoder.write_header().map_err(|error| error.to_string())?;
     writer
         .write_image_data(&shot.rgba)
@@ -587,8 +615,11 @@ fn subscription(state: &DesktopApp) -> Subscription<Message> {
         }
         None => Subscription::none(),
     };
-    if state.recording.is_some() {
-        Subscription::batch([backend, Subscription::run(recording_ticks)])
+    if let Some(recording) = &state.recording {
+        Subscription::batch([
+            backend,
+            Subscription::run_with(recording.fps, |fps| recording_ticks(*fps)),
+        ])
     } else if state.autoshot.is_some() {
         Subscription::batch([backend, Subscription::run(autoshot_ticks)])
     } else {
@@ -596,23 +627,22 @@ fn subscription(state: &DesktopApp) -> Subscription<Message> {
     }
 }
 
+fn recording_ticks(fps: u32) -> impl Stream<Item = Message> + Send {
+    metronome(Duration::from_secs_f64(1.0 / f64::from(fps)))
+}
+
 /// A plain 1.4s metronome for the screenshot tour, thread-driven so no
 /// async timer runtime is required.
-/// A faster metronome for live-scan recording (~2 fps).
-fn recording_ticks() -> impl Stream<Item = Message> + Send {
-    metronome(500)
-}
-
 fn autoshot_ticks() -> impl Stream<Item = Message> + Send {
-    metronome(1_400)
+    metronome(Duration::from_millis(1_400))
 }
 
-fn metronome(interval_ms: u64) -> impl Stream<Item = Message> + Send {
+fn metronome(interval: Duration) -> impl Stream<Item = Message> + Send {
     stream::channel(4, async move |mut output| {
         let (sender, mut ticks) = iced::futures::channel::mpsc::unbounded();
         std::thread::spawn(move || {
             loop {
-                std::thread::sleep(Duration::from_millis(interval_ms));
+                std::thread::sleep(interval);
                 if sender.unbounded_send(()).is_err() {
                     break;
                 }
@@ -722,6 +752,40 @@ mod tests {
             .err()
             .unwrap();
         assert!(error.contains("unknown option"));
+    }
+
+    #[test]
+    fn recording_rate_accepts_supported_values_and_rejects_invalid_input() {
+        for fps in ["1", "30", "60"] {
+            let cli = parse_arguments(
+                ["--record", "/tmp/frames", "--record-fps", fps, "/"]
+                    .into_iter()
+                    .map(str::to_owned),
+            )
+            .unwrap();
+            assert_eq!(cli.record_fps, Some(fps.parse().unwrap()));
+        }
+        for fps in ["0", "61", "-1", "30.5", "fast"] {
+            assert!(parse_arguments(["--record-fps", fps].into_iter().map(str::to_owned)).is_err());
+        }
+        assert!(parse_arguments(["--record-fps"].into_iter().map(str::to_owned)).is_err());
+    }
+
+    #[test]
+    fn recording_tour_holds_each_view_for_four_seconds_at_any_capture_rate() {
+        for fps in [2, 30, 60] {
+            for frame in 0..16 * fps {
+                let elapsed = Duration::from_secs_f64(f64::from(frame) / f64::from(fps));
+                let expected = match frame / (4 * fps) {
+                    0 => Tab::Treemap,
+                    1 => Tab::Sunburst,
+                    2 => Tab::Graph,
+                    _ => Tab::Diagnostics,
+                };
+                assert_eq!(recording_tour_tab(elapsed), Some(expected));
+            }
+        }
+        assert_eq!(recording_tour_tab(Duration::from_secs(16)), None);
     }
 
     #[test]
