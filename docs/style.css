@@ -53,7 +53,7 @@ h1 span { color: var(--accent); }
 .demo-header { border-bottom: 1px solid var(--border); }
 .demo-label { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.04em; color: var(--muted); }
 .demo-tag { font-size: 0.75rem; color: var(--accent); }
-.demo video { display: block; width: 100%; background: #08121b; aspect-ratio: 1440 / 910; }
+.demo video { display: block; width: 100%; background: #08121b; aspect-ratio: 2720 / 1720; }
 figcaption { border-top: 1px solid var(--border); font-size: 0.8125rem; color: var(--muted); }
 figcaption span:first-child { color: var(--text); }
 

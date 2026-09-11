@@ -34,16 +34,42 @@ See [GitHub's custom Pages workflow documentation](https://docs.github.com/en/pa
   platform requirements together. The current download is the verified
   `v0.1.0` Apple Silicon release for macOS 13 or later.
 - `assets/essm-icon.png` is exported from `desktop/packaging/ESSM.icns`.
-- `assets/essm-scan.mp4` is an H.264 conversion of the existing
-  `desktop/dist/essm-root-scan.gif`, with its original timing. The poster is a
-  frame from that recording. Playback is user initiated, with native video
-  controls and no autoplay.
+- The demo is a fresh capture made with the app's `--record` option at its
+  native Retina resolution, 2720 × 1720. It is encoded directly from full-color
+  PNG frames, without passing through the GIF or resizing.
+- `assets/essm-scan.webm` uses lossless VP9 with identity RGB color space, so
+  text and color detail are preserved exactly. The source advertises VP9
+  Profile 1 so browsers that cannot decode it can select the MP4 fallback.
+- `assets/essm-scan.mp4` is the broadly compatible H.264 fallback, encoded at
+  CRF 8 and the same native resolution. The poster is an original PNG frame.
+- The video autoplays muted and inline, with native pause, seek, and fullscreen
+  controls. Browser settings may still block autoplay; the play control remains
+  available. See [WebKit's video policies](https://webkit.org/blog/6784/new-video-policies-for-ios/).
 
-To regenerate the recording and its poster with FFmpeg:
+## Record and encode the demo
+
+Use a fresh directory, and leave the recorder running until the app exits after
+showing the treemap, sunburst, graph, and diagnostics. `--anonymize` hides the
+account username in displayed paths. Review the captured frames before publishing.
+
+With the packaged app already built, run from the repository root:
 
 ```sh
-ffmpeg -i desktop/dist/essm-root-scan.gif -movflags +faststart \
-  -pix_fmt yuv420p -vf 'scale=1440:-2' -an docs/assets/essm-scan.mp4
-ffmpeg -ss 3 -i docs/assets/essm-scan.mp4 -frames:v 1 -update 1 \
-  docs/assets/essm-scan-poster.png
+recording_dir=$(mktemp -d /tmp/essm-recording.XXXXXX)
+desktop/dist/ESSM.app/Contents/MacOS/essm \
+  --dark --anonymize --record "$recording_dir" /
+python3 scripts/encode-site-recording.py "$recording_dir" --poster-frame 42
 ```
+
+Alternatively, use `desktop/target/release/essm` after building the development
+backend and release binary. The encoder requires Python 3 and FFmpeg with
+`libvpx-vp9` and `libx264`. Choose a poster frame from that recording; frame 42
+is the treemap frame used for the current demo.
+
+The recorder samples approximately twice per second. The encoder derives frame
+durations from the original PNG modification timestamps, then repeats frames on
+a 30 fps playback timeline without interpolation or acceleration. Keep those
+timestamps intact when copying or archiving the raw frames. The current scan
+takes about 23 seconds, followed by the view tour, for about 39 seconds total.
+If the captured window size changes, update the video dimensions in `index.html`
+and the aspect ratio in `style.css` together.
