@@ -77,5 +77,9 @@ timeline without interpolation or acceleration. The post-scan tour holds each
 view for four seconds regardless of capture rate. Older recordings without a
 timing manifest fall back to PNG modification timestamps.
 
+Media URLs in `index.html` include `?v=` followed by the first 12 characters of
+the asset's SHA-256. Update those values after replacing the videos or poster
+so returning visitors load the new recording instead of a cached version.
+
 If the captured window size changes, update the video dimensions in `index.html`
 and the aspect ratio in `style.css` together.
