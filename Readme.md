@@ -1,5 +1,7 @@
 # Enclosed Space Searching Machine
 
+[Website](https://hyperrays.github.io/ESSM/) · [Download for macOS](https://github.com/HyperRays/ESSM/releases/latest)
+
 <p align="center">
   <img src="desktop/dist/essm-root-scan.gif" alt="Enclosed Space Searching Machine scanning the macOS root filesystem and progressively filling an interactive treemap" width="100%">
 </p>
