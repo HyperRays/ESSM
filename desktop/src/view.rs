@@ -385,7 +385,8 @@ fn viz_toolbar(app: &ScanModel) -> Element<'_, Message> {
 fn treemap_canvas(app: &ScanModel) -> Element<'_, Message> {
     let mut cells: Vec<TreemapCell> = app
         .children_by_size(app.focus)
-        .into_iter()
+        .iter()
+        .copied()
         .take(LIST_LIMIT)
         .map(|child| TreemapCell {
             directory_id: child,
@@ -453,7 +454,7 @@ fn sunburst_canvas(app: &ScanModel) -> Element<'_, Message> {
         }
         let total = app.size_tree.subtree_bytes(id).max(1);
         let mut cursor = start;
-        for (index, child) in app.children_by_size(id).into_iter().enumerate() {
+        for (index, &child) in app.children_by_size(id).iter().enumerate() {
             let bytes = app.size_tree.subtree_bytes(child);
             let share = sweep * (bytes as f32 / total as f32);
             if share < MINIMUM_SWEEP {
@@ -546,17 +547,19 @@ fn graph_canvas(app: &ScanModel) -> Element<'_, Message> {
     // Rows are child directories plus, when present, one entry for the
     // files sitting directly in the focus — they own real bytes too.
     let own_bytes = app.size_tree.own_bytes(app.focus);
-    let mut rows: Vec<(u64, Option<u32>)> = app
-        .children_by_size(app.focus)
-        .into_iter()
+    let children = app.children_by_size(app.focus);
+    let hidden_children = (children.len() + usize::from(own_bytes > 0)).saturating_sub(CHILD_LIMIT);
+    let mut shown: Vec<(u64, Option<u32>)> = children
+        .iter()
+        .copied()
+        .take(CHILD_LIMIT)
         .map(|child| (app.size_tree.subtree_bytes(child), Some(child)))
         .collect();
     if own_bytes > 0 {
-        let position = rows.partition_point(|&(bytes, _)| bytes >= own_bytes);
-        rows.insert(position, (own_bytes, None));
+        let position = shown.partition_point(|&(bytes, _)| bytes >= own_bytes);
+        shown.insert(position, (own_bytes, None));
+        shown.truncate(CHILD_LIMIT);
     }
-    let hidden_children = rows.len().saturating_sub(CHILD_LIMIT);
-    let shown: Vec<(u64, Option<u32>)> = rows.into_iter().take(CHILD_LIMIT).collect();
     if shown.is_empty() {
         return viz_empty(app);
     }

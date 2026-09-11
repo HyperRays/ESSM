@@ -512,13 +512,12 @@ impl ScanModel {
 
     /// Children of `id` with accumulated bytes, largest first. Ordering is
     /// maintained once per ingested backend batch by [`SizeTree::finish_batch`].
-    pub fn children_by_size(&self, id: u32) -> Vec<u32> {
-        self.size_tree
-            .children(id)
-            .iter()
-            .copied()
-            .filter(|&child| self.size_tree.subtree_bytes(child) > 0)
-            .collect()
+    /// Positive sizes form a prefix, so views can borrow it and limit their
+    /// work to visible children without scanning or copying every sibling.
+    pub fn children_by_size(&self, id: u32) -> &[u32] {
+        let children = self.size_tree.children(id);
+        let nonempty = children.partition_point(|&child| self.size_tree.subtree_bytes(child) > 0);
+        &children[..nonempty]
     }
 
     pub fn set_filter(&mut self, filter: String) {
@@ -880,12 +879,54 @@ mod tests {
 
         assert_eq!(app.children_by_size(0), [2, 1]);
 
+        // A previously empty child becomes the largest in the next batch.
+        app.size_tree.add_bytes(3, 100);
+        app.size_tree.link(4, 0);
+        app.size_tree.finish_batch();
+        assert_eq!(app.children_by_size(0), [3, 2, 1]);
+        assert!(app.children_by_size(4).is_empty());
+        assert!(app.children_by_size(999).is_empty());
+
         app.selected = Some(2);
         assert_eq!(app.inspected(), 2);
         app.focus_directory(2);
         assert_eq!(app.focus, 2);
         assert_eq!(app.selected, None);
         assert_eq!(app.inspected(), 2);
+    }
+
+    /// Measures the child selection used by the treemap on a wide directory.
+    /// Run with `cargo test --release wide_directory_view_benchmark -- --ignored --nocapture`.
+    #[test]
+    #[ignore = "manual UI model benchmark"]
+    fn wide_directory_view_benchmark() {
+        use std::hint::black_box;
+        use std::time::Instant;
+
+        let mut app = ScanModel::new(0);
+        for id in 1..=100_000 {
+            app.size_tree.link(id, 0);
+            app.size_tree.add_bytes(id, u64::from(id));
+        }
+        app.size_tree.finish_batch();
+
+        let started = Instant::now();
+        let mut checksum = 0_u64;
+        for _ in 0..10_000 {
+            checksum += black_box(&app)
+                .children_by_size(black_box(0))
+                .iter()
+                .copied()
+                .take(100)
+                .map(u64::from)
+                .sum::<u64>();
+        }
+        assert_eq!(checksum, 99_950_500_000);
+        eprintln!(
+            "10,000 visible-child selections: {:.3} ms",
+            started.elapsed().as_secs_f64() * 1_000.0
+        );
+        black_box(checksum);
     }
 
     #[test]
