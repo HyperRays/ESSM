@@ -94,7 +94,7 @@ defmodule FindexRust.Bridge do
 
     receive do
       {:wire_frame, ^reader, request} when is_map(request) ->
-        case dispatch_frame(request, output, state) do
+        case dispatch(request, output, state) do
           {:continue, state} ->
             event_loop(output, state, session_key, reader, reader_monitor)
 
@@ -136,8 +136,6 @@ defmodule FindexRust.Bridge do
         event_loop(output, state, session_key, reader, reader_monitor)
     end
   end
-
-  defp dispatch_frame(request, output, state), do: dispatch(request, output, state)
 
   defp dispatch(request, output, state) do
     id = Map.get(request, "id")

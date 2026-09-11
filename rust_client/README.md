@@ -34,10 +34,11 @@ use findex_client::{Client, ScanOptions, development_command};
 let workspace_root = "/path/to/workspace";
 let mut client = Client::spawn(development_command(workspace_root))?;
 
-let index = client.start_scan(
-    "/Users/me/Documents",
-    &ScanOptions::default(),
-)?;
+let options = ScanOptions {
+    fields: vec!["type".to_owned(), "data_size".to_owned()],
+    ..ScanOptions::default()
+};
+let index = client.start_scan("/Users/me/Documents", &options)?;
 
 // These reads are valid while traversal is still publishing directories.
 let status = client.index_status(index.index_id)?;
@@ -116,8 +117,10 @@ use findex_client::{Client, Ranking, ScanOptions, development_command};
 
 # fn run() -> Result<(), findex_client::Error> {
 let mut client = Client::spawn(development_command("/path/to/workspace"))?;
-let mut options = ScanOptions::default();
-options.ranking = Ranking::Macos;
+let options = ScanOptions {
+    ranking: Ranking::Macos,
+    ..ScanOptions::default()
+};
 let result = client.scan("/", &options)?;
 client.shutdown()?;
 # println!("{}", result.report.entries);
@@ -163,3 +166,16 @@ cargo bench --manifest-path rust_client/Cargo.toml --bench findex_client
 `FINDEX_BENCH_SAMPLE_SIZE` overrides Criterion's suite-specific sample count
 and must be at least 10. Real trees are scanned once as an untimed probe and
 then at least 10 times, so use a focused target for routine measurements.
+
+## Source layout
+
+The crate root re-exports the public API. Internals are grouped by responsibility:
+
+| File | Responsibility |
+| --- | --- |
+| `src/client.rs` | Child-process lifecycle, requests, and completion events |
+| `src/types.rs` | Scan options and response models |
+| `src/error.rs` | Public error type and conversions |
+| `src/wire.rs` | Frame and Erlang external-term encoding/decoding |
+| `tests/client.rs` | Integration tests through the public Rust API and real backend |
+| `backend/` | Elixir stdio bridge and OTP release |
