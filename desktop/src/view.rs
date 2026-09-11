@@ -37,13 +37,9 @@ const BRANCH_PALETTE: [Color; 5] = [
 // ---------------------------------------------------------------- setup --
 
 pub fn setup(form: &SetupForm) -> Element<'_, Message> {
-    let header = column![
-        text("Enclosed Space Searching Machine")
-            .size(24)
-            .color(SKY_BLUE),
-    ]
-    .align_x(Alignment::Center)
-    .width(Length::Fill);
+    let header = column![text("ESSM").size(24).color(SKY_BLUE),]
+        .align_x(Alignment::Center)
+        .width(Length::Fill);
 
     let location = form_section(
         "LOCATION",
@@ -205,8 +201,7 @@ pub fn running(app: &ScanModel) -> Element<'_, Message> {
 
 fn sidebar(app: &ScanModel) -> Element<'_, Message> {
     let mut navigation = column![
-        text("Enclosed Space").size(19).color(SKY_BLUE),
-        text("Searching Machine").size(19).color(SKY_BLUE),
+        text("ESSM").size(24).color(SKY_BLUE),
         Space::new().height(Length::Fixed(14.0)),
     ]
     .spacing(2);

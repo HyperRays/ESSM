@@ -1,4 +1,4 @@
-//! Enclosed Space Searching Machine palette and shared widget styles.
+//! ESSM palette and shared widget styles.
 //!
 //! Both modes share one accent set: sky blue (primary), deep blue,
 //! signal red (failures only), amber (pending), blossom pink, and teal
@@ -100,11 +100,7 @@ pub fn ui() -> Ui {
 pub fn theme() -> Theme {
     let ui = ui();
     Theme::custom(
-        if is_dark() {
-            "Enclosed Space Searching Machine Dark"
-        } else {
-            "Enclosed Space Searching Machine"
-        },
+        if is_dark() { "ESSM Dark" } else { "ESSM" },
         Palette {
             background: ui.background,
             text: ui.text,

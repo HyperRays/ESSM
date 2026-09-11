@@ -5,13 +5,13 @@
 	<key>CFBundleName</key>
 	<string>ESSM</string>
 	<key>CFBundleDisplayName</key>
-	<string>Enclosed Space Searching Machine</string>
+	<string>ESSM</string>
 	<key>CFBundleIdentifier</key>
 	<string>dev.findex.essm</string>
 	<key>CFBundleVersion</key>
-	<string>0.1.0</string>
+	<string>0.1.1</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.0</string>
+	<string>0.1.1</string>
 	<key>CFBundleExecutable</key>
 	<string>essm</string>
 	<key>CFBundleIconFile</key>
@@ -23,6 +23,6 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>Enclosed Space Searching Machine</string>
+	<string>ESSM</string>
 </dict>
 </plist>

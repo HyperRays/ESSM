@@ -1,4 +1,4 @@
-//! Enclosed Space Searching Machine: a filesystem indexing and
+//! ESSM: a filesystem indexing and
 //! visualization desktop app, built on iced.
 //!
 //! One backend worker per scan drives the synchronous `findex-client` on a
@@ -49,7 +49,7 @@ fn main() -> iced::Result {
         update,
         view,
     )
-    .title(|_state: &DesktopApp| "Enclosed Space Searching Machine".to_owned())
+    .title("ESSM")
     .subscription(subscription)
     .theme(|_state: &DesktopApp| theme::theme())
     .window_size(Size::new(1360.0, 860.0))
@@ -146,7 +146,7 @@ fn parse_arguments(arguments: impl Iterator<Item = String>) -> Result<Cli, Strin
 fn print_help() {
     println!(
         "\
-Enclosed Space Searching Machine
+ESSM
 
 usage: essm [OPTIONS] [ROOT]
 
