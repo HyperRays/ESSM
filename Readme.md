@@ -18,8 +18,9 @@ From the project directory, use:
 ```bash
   make            # Build full development stack
   make run        # Build and launch desktop
-  make check      # Formatting + strict Clippy
-  make test       # All test suites
+  make fmt        # Format Elixir and Rust sources
+  make check      # Formatting, strict Clippy, and native C diagnostics
+  make test       # All test suites and Rust client documentation examples
   make verify     # Check + test
   make release    # Optimized builds and OTP release
   make package    # Build self-contained macOS .app
@@ -64,11 +65,15 @@ project-location options.
 
 ## Development
 
+Individual components and checks can be run from the repository root:
+
 ```sh
-(cd rust_client/backend && mix compile)
-cargo fmt --check --manifest-path desktop/Cargo.toml
-cargo clippy --all-targets --manifest-path desktop/Cargo.toml -- -D warnings
-cargo test --manifest-path desktop/Cargo.toml
+make findex        # Native library and Elixir engine
+make backend       # Engine and development stdio bridge
+make rust-client   # Standalone Rust client library
+make check-format  # Formatting only
+make check-rust    # Strict Clippy for both Rust crates
+make check-native  # Native static analysis and strict compiler warnings
 ```
 
 The integration test performs a real scan through the event stream

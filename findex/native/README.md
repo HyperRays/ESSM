@@ -1,3 +1,9 @@
+# Native Findex library
+
+The native library is built automatically by `mix compile` in `findex/` or by
+`make findex` from the repository root. It requires macOS, Erlang headers, and
+the Xcode Command Line Tools.
+
 | File | Responsibility |
 | --- | --- |
 | `findex_nif.c` | NIF registration and resource load/unload. |
@@ -8,13 +14,19 @@
 
 ## Static checks
 
+From the repository root:
+
 ```sh
-make -C native analyze
+make check-native
 ```
 
 ## Runtime checks
 
+These rebuild the native library with sanitizers, run the engine tests, and
+restore the optimized native build afterwards. Run them separately from other
+builds and tests that load the same library.
+
 ```sh
-make -C native sanitize
-make -C native sanitize-thread
+make -C findex/native sanitize
+make -C findex/native sanitize-thread
 ```

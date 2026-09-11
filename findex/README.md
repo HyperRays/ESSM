@@ -1,9 +1,8 @@
 # Findex
 
-Findex is a macOS filesystem indexer built around `getattrlistbulk(2)`. 
+Findex is a macOS filesystem indexer built around `getattrlistbulk(2)`.
 
-
-Recursive traversal first attempts a naive path open for speed,
+Recursive traversal first attempts a direct path open for speed,
 then falls back on `ENAMETOOLONG` or a symlinked path component to
 descriptor relative resolution through the native store's parent/name links.
 It therefore continues through valid trees whose printable paths exceed macOS
@@ -23,16 +22,16 @@ IO.inspect(Findex.Store.stats(result.store))
 ```
 
 `result.report.complete?` is true only when every scheduled directory was
-published and no entry returned a metadata error. Errors return `{:error, %Findex.Indexer.Failure{}}` with the partial tree and
-report attached.
+published and no entry returned a metadata error. Errors return
+`{:error, %Findex.Indexer.Failure{}}` with the partial tree and report attached.
 
 The default `mount_policy: :stay_on_filesystem` skips mount points and automount
 triggers. This avoids double traversal of macOS's APFS Data volume.
 
-
-Traversal policies are implemented directly in Elixir and are passed to the scheduler. `:default` is the unbiased native
-order, `:name_biased` delays generated and dependency trees, and `:macos`
-prioritizes some common space consuming directories on macos:
+Traversal policies are implemented in Elixir and passed to the scheduler.
+`:default` preserves native order, `:name_biased` delays generated and dependency
+trees, and `:macos` prioritizes directories that commonly use substantial space
+on macOS:
 
 ```elixir
 Findex.Indexer.run("/", ranking: :macos)
@@ -104,29 +103,42 @@ after
 end
 ```
 
-Use `fields: :fast`, `fields: :full`, or one explicit list. `Findex.Batch.value/3` decodes one
-value, `to_entries/1` performs the optional allocation heavy conversion.
+Use `fields: :fast`, `fields: :full`, or an explicit list. `Findex.Batch.value/3`
+decodes one value; `Findex.Batch.to_entries/1` optionally converts the packed
+batch into `Findex.Entry` structs.
 
 ## Build and verify
 
+Requires macOS, Erlang/Elixir, and the Xcode Command Line Tools. The Rust client
+and desktop also require a Rust toolchain. From the repository root:
+
 ```sh
-mix compile
-mix test
-(cd rust_client/backend && mix compile && mix test)
-cargo test --manifest-path rust_client/Cargo.toml
-cargo test --manifest-path tui/Cargo.toml
-cargo test --manifest-path desktop/Cargo.toml
-make -C native analyze
-make -C native sanitize
-make -C native sanitize-thread
+make findex       # Compile the native library and Elixir engine
+make backend      # Also compile the development stdio bridge
+make fmt          # Format Elixir and Rust sources
+make verify       # Check formatting, Rust/C diagnostics, and all test suites
 ```
 
+For engine-only tests, run `(cd findex && mix test)`. Native sanitizer smoke
+tests are separate from `make verify`; run them one at a time:
+
+```sh
+make -C findex/native sanitize
+make -C findex/native sanitize-thread
+```
+
+See the [native library README](native/README.md) for implementation details
+and the [Rust client README](../rust_client/README.md) for the process boundary.
+
 ## Benchmarks
+
+From `findex/`:
 
 ```sh
 mix run bench/directory_benchmark.exs -- findex-packed-store-concurrent /path/to/tree 8
 mix run bench/directory_benchmark.exs -- findex-packed-store-name-ranked /path/to/tree 8
 make -C native benchmark
 ./bench/readdir_baseline /path/to/tree
-cargo bench --manifest-path rust_client/Cargo.toml --bench findex_client
 ```
+
+The Rust client's end-to-end benchmarks are documented in its README.

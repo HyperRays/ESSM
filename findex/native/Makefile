@@ -1,4 +1,6 @@
-ERTS_INCLUDE_DIR := $(shell erl -noshell -eval 'io:format("~s/erts-~s/include", [code:root_dir(), erlang:system_info(version)]), halt().')
+ERL ?= erl
+# Resolve headers only for recipes that need them; clean does not require Erlang.
+ERTS_INCLUDE_DIR ?= $(shell $(ERL) -noshell -eval 'io:format("~s/erts-~s/include", [code:root_dir(), erlang:system_info(version)]), halt().')
 TARGET := ../priv/findex_nif.so
 SOURCES := findex_nif.c findex_common.c findex_directory.c findex_store.c
 HEADERS := findex_nif.h
@@ -23,7 +25,7 @@ all: $(TARGET)
 
 $(TARGET): $(SOURCES) $(HEADERS) Makefile
 	@mkdir -p ../priv
-	$(CC) $(CFLAGS) -I$(ERTS_INCLUDE_DIR) $(LDFLAGS) -o $@ $(SOURCES)
+	$(CC) $(CFLAGS) -I"$(ERTS_INCLUDE_DIR)" $(LDFLAGS) -o $@ $(SOURCES)
 
 benchmark: $(BENCHMARK_TARGET)
 
@@ -33,15 +35,15 @@ $(BENCHMARK_TARGET): $(BENCHMARK_SOURCE) Makefile
 analyze:
 	@for source in $(SOURCES); do \
 		xcrun clang --analyze -std=c11 -Wall -Wextra -Werror \
-			-I$(ERTS_INCLUDE_DIR) -o /dev/null $$source || exit $$?; \
+			-I"$(ERTS_INCLUDE_DIR)" -o /dev/null $$source || exit $$?; \
 	done
 	@for source in $(SOURCES); do \
-		xcrun clang --analyze -std=c11 -I$(ERTS_INCLUDE_DIR) \
+		xcrun clang --analyze -std=c11 -I"$(ERTS_INCLUDE_DIR)" \
 			-Xanalyzer -analyzer-checker=core,unix,deadcode,security,alpha.core,alpha.security,alpha.unix \
 			-o /dev/null $$source || exit $$?; \
 	done
 	xcrun clang -fsyntax-only -std=c11 -Wall -Wextra -Werror \
-		$(STRICT_WARNINGS) -I$(ERTS_INCLUDE_DIR) $(SOURCES)
+		$(STRICT_WARNINGS) -I"$(ERTS_INCLUDE_DIR)" $(SOURCES)
 
 sanitize:
 	./run_sanitizers.sh

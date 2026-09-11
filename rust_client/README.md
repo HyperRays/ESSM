@@ -13,17 +13,16 @@ Backend stderr remains attached to the Rust application's stderr.
 ## Development use
 
 Keep `findex/` and `rust_client/` as sibling directories under one workspace
-root. Compile the companion backend first; its path dependency compiles core
-Findex and the native library as part of the same build:
+root. From that root, compile the companion backend before running the client
+tests. This also compiles core Findex and its native library:
 
 ```sh
-cd /path/to/workspace
-cd rust_client/backend
-mix compile
-mix test
-cd ../..
-cargo test --manifest-path rust_client/Cargo.toml
+make backend
+cargo test --locked --manifest-path rust_client/Cargo.toml
 ```
+
+`make rust-client` builds the Rust library on its own. `make verify` checks and
+tests the entire project, including the Rust examples in this README.
 
 Then retain and inspect an index from Rust:
 
@@ -145,8 +144,8 @@ in-process API rather than a Rust bridge feature.
 Compile the backend, then run the Rust-side benchmarks:
 
 ```sh
-(cd rust_client/backend && mix compile)
-cargo bench --manifest-path rust_client/Cargo.toml --bench findex_client
+make backend
+cargo bench --locked --manifest-path rust_client/Cargo.toml --bench findex_client
 ```
 
 The target contains four suites: BEAM spawn/handshake/shutdown, repeated
@@ -159,7 +158,7 @@ suite or a real traversal target:
 FINDEX_BENCH_SUITE=traversal \
 FINDEX_BENCH_ROOT="$HOME/Documents/programming" \
 FINDEX_BENCH_CONCURRENCY=8 \
-cargo bench --manifest-path rust_client/Cargo.toml --bench findex_client
+cargo bench --locked --manifest-path rust_client/Cargo.toml --bench findex_client
 ```
 
 `FINDEX_BENCH_SUITE` accepts `startup`, `traversal`, `ranking`, `reads`, or `all`.
